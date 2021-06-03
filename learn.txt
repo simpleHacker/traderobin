@@ -1,0 +1,86 @@
+== market data source (Feeds) ==
+Pyalgotrade provide feeds APIs
+* history stock data: https://www.quandl.com/
+  python -m "pyalgotrade.tools.quandl" --source-code="WIKI" --table-code="ORCL" --from-year=2000 --to-year=2000 --storage=. --force-download --frequency=daily
+* bitcoin history: tick data as supplied by http://www.bitcoincharts.com/about/markets-api/
+  using pyalgotrade.bitcoincharts.barfeed.CSVTradeFeed.
+  Files can be downloaded from http://api.bitcoincharts.com/v1/csv/.  http://api.bitcoincharts.com/v1/csv/bitstampUSD.csv.gz
+  - example: http://gbeced.github.io/pyalgotrade/docs/v0.20/html/bitcoincharts_example.html?highlight=bitcoincharts
+* bitcoin realtime feeds by bitstamp: (should get it from robin-hood)
+  barFeed = barfeed.LiveTradeFeed() 
+* coinbase pro live data and historical
+  pip install shrimpy-python
+  https://blog.shrimpy.io/blog/python-scripts-for-coinbase-pro-market-data
+
+== Trading decision guidline ==
+* Support and resistent: get the trend, then use it.
+ - resistance levels are also regarded as a ceiling because these price levels represent areas where a rally runs out of gas.
+ - Support levels are on the other side of the coin. Support refers to prices on a chart that tend to act as a floor by preventing the price of an asset from being pushed downward
+ - round number: 50, 100 can be a resistent
+ - Support and resistance zones are likely to be more significant when they are preceded by steep advances or declines.
+ - When strong activity occurs on high volume and the price drops, a lot of selling will likely occur
+* moving average: 
+ - a moving average is a constantly changing line that smooths out past price data while also allowing the trader to identify support and resistance. Notice how the price of the asset finds support at the moving average when the trend is up, and how it acts as resistance when the trend is down. Traders can use moving averages in a variety of ways, such as to anticipate moves to the upside when price lines cross above a key moving average, or to exit trades when the price drops below a moving average.
+ - A moving average can also act as support or resistance. In an uptrend, a 50-day, 100-day or 200-day moving average may act as a support level, as shown in the figure below. This is because the average acts like a floor (support), so the price bounces up off of it. In a downtrend, a moving average may act as resistance; like a ceiling, the price hits the level and then starts to drop again.
+ - The time frame chosen for a moving average will also play a significant role in how effective it is (regardless of type).
+ - An MA with a short time frame will react much quicker to price changes than an MA with a long look back period. 
+ - The 20-day may be of analytical benefit to a shorter-term trader since it follows the price more closely and therefore produces less "lag" than the longer-term moving average. A 100-day MA may be more beneficial to a longer-term trader.
+ - Another strategy is to apply two moving averages to a chart: one longer and one shorter. When the shorter-term MA crosses above the longer-term MA, it's a buy signal, as it indicates that the trend is shifting up. This is known as a "golden cross."
+ - Meanwhile, when the shorter-term MA crosses below the longer-term MA, it's a sell signal, as it indicates that the trend is shifting down. This is known as a "dead/death cross."
+ - Moving averages work quite well in strong trending conditions but poorly in choppy or ranging conditions.
+*  trendlines: Trendlines are easily recognizable lines that traders draw on charts to connect a series of prices together or show some data's best fit.
+ - A single trendline can be applied to a chart to give a clearer picture of the trend. 
+ - Trendlines can be applied to the highs and the lows to create a channel.
+ - Technical analysts believe the trend is your friend, and identifying this trend is the first step in the process of making a good trade.
+ - In this case, trader may choose enter a long position near the trendline and then extend it into the future. If the price action breaches the trendline on the downside, the trader can use that as a signal to close the position.
+ -  A trendline formed on low volume may easily be broken as volume picks up throughout a session.
+* earning release
+* RSI
+ - The best timeframe for RSI lies between 2 to 6. While the default 14 periods is fine for many situations, intermediate and advanced traders can decrease or increase the RSI timeframe slightly depending on whether the position they are entering is long-term or short-term. Short-term traders should prefer shorter periods while long-term traders should gravitate towards longer periods. However, generally, the best edges are found with timeframes between 2 to 6.
+ - longer periods signals are much more reliable and indicate overbought/oversold commodities much more accurately.
+ - If you are someone who likes to hold stocks for longer periods, then using a 20-day period could be best.
+ - not for extreme long investment
+ - 14 periods and 70/30 thresholds, or 2 periods and 90/10
+ 
+
+* SP500
+* BRC - bloomberg
+* divident
+* hard set: 10% dump and 30% gain??
+
+=== strategy ==
+* using 5 or 10 against 20, selling signal stable
+* down turn up buy, check RSI if under 30, also check MA short trending line, if still down, no buy?
+* RSI + wait for 1h for below 30 when turn back up 30, 30 for up 70 when turn back from top
+
+== trading rules ==
+=== single indicator calc ===
+1. Support and resistance zones are likely to be more significant when they are preceded by steep advances or declines.
+2. Traders can use moving averages in a variety of ways, such as to anticipate moves to the upside when price lines cross above a key moving average, or to exit trades when the price drops below a moving average. - findout the days for sma calculation that can max the gain.
+3. Another strategy is to apply two moving averages to a chart: one longer and one shorter. When the shorter-term MA crosses above the longer-term MA, it's a buy signal, as it indicates that the trend is shifting up. This is known as a "golden cross."
+4. n this case, trader may choose enter a long position near the trendline and then extend it into the future. If the price action breaches the trendline on the downside, the trader can use that as a signal to close the position.
+5. The best timeframe for RSI lies between 2 to 6.
+6. RSI buy signal, when it bounce back from lowest under 30; sell signal, when it drop  down from highest above 70, if over 70, when it close to 72, then sell.
+    Use 2,3 different scare RSI chat to decide buy or sell. shot scale gave more signal, but long scale give stable signal.
+    so when checking shot is can sell, also check long, see if still climb up to 70. If still does, should wait. 
+7. train RSI by periods: 4,5,6 and also calc range: 1m, 3m, 6m and 1year
+8. hard set: 10% dump and 30% gain??
+9. cal trading frequency (day-rsi5:1m, 5day-rsi5:3m....) model and compare the gain.
+
+=== combined indicator calc ===
+* Trend Following Indicators - Bollinger Bands
+* Momentum Indicators - RSI
+* Volume Indicators - On Balance Volume (OBV) 
+
+* bollinger bands:
+ - The middle line can represent areas of support on pullbacks when the stock is riding the bands. You could even increase your position in the stock when the price pulls back to the middle line.
+Regarding identifying when the trend is losing steam, failure of the stock to continue to accelerate outside of the bands indicates a weakening in the strength of the stock.
+This would be a good time to think about scaling out of a position or getting out entirely.
+ - The idea, using daily charts, is that when the indicator reaches its lowest level in 6 months, you can expect the volatility to increase. This goes back to the tightening of the bands that I mentioned above. 
+   This squeezing action of the Bollinger Band indicator foreshadows a big move. You can use additional signs such as volume expanding, or the accumulation distribution indicator turning up.  
+   Notice how the price and volume broke when approaching the head fake highs
+ - Remember, Bollinger Band width are informing you that a pending move is coming, the direction and strength are up to the market.
+ - Trade Inside the Bands: First, you need to find a stock that is stuck in a trading range. The greater the range, the better. In the above example, you just buy when a stock tests the low end of its range and the lower band. Conversely, you sell when the stock tests the high of the range and the upper band.
+   The key to this strategy is a stock having a clearly defined trading range. This way you are not trading the bands blindly but are using the bands to gauge when a stock has gone too far.
+  
+* OBV:

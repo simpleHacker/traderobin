@@ -1,0 +1,49 @@
+== service component definition ==
+* login service: pass in account name and pass everytime when rerun, and generate tokin
+* indicator collection: with all indicators 
+  indicator class is a wrapper to indicator calculation, register indicator, register alarting condition
+* strategy : indicator combination, ordering, and weighting to score formula
+* indicator condition model trainer(multi-threads): train to get best gain condition for indicator and best indicator combination.
+  dynamically adjust model on streaming data
+* market monitor: keep watching market data and check for indicator condition match. if match, signal buy or sell suggestion.
+** feeds hub: record  market data for interested stocks (only take 1 months data), others download from crypto data website.
+* execution desk: according predefined execution instruction, take in signal and execute or notify. record the execution performance along the buy and sell for re-calculate models. 
+  For exception case, like spike market crash or spike up sharply, always alert.
+
+== architecture design ==
+* trading platform - API specific, any way to be vender nuetral
+  - may be wrap login, - generic and specific
+  - wrap get hsitory quote - connect to feeds (periodically)
+  - wrap trading action
+* feeds
+  - take the data in any format from real time update and history data,
+  - ability to aggregate data from different source - like volumn from coinbase - not possible
+    if want to get volumn data, need to use different data source: https://bitcoincharts.com/about/markets-api/
+  - convert it to defined normalized format - numpy array
+  - feeds store to keep history data - enough for model training (always 1 year window) - persistent on disk
+* indicator collection
+  - calculate indicator from feeds 
+  - calc frequency is according feeds frequency - appending calc (continueous calc) - prepare for next calc
+  - calc will take several parameters in parallel computing
+  - keep the result in store (anytime, there will be one param indicator in effect)
+* rule structure:
+  - rule definition: 
+     1. has already fixed for each indicator. buying and selling signal for each rule is predefined
+     2. only params of the indicator can be different, can be tried and find the best fit one
+     3. one goal for training the rule, need to maximize gain.
+     4. benchmark ideal (comparison) is buy every low and sell at every high, 
+     5. so best params for indicator or indicator combination is to close the ideal
+     6. So the store is indicator params optimum
+     7, so the rule an be expressed in a condition function to test true or false
+* model trainer
+  - take in indicator(with diff params), feeds and rule functions
+  - calculate gains for each rules with each param
+  - evaluate gains for single indicators (trend, momentum, volumn)
+  - combine indicators and its gains and compare get best combinations
+  - save the best indicators ID for single models, save the combined indicator ID for combined models to file
+  - training frequency - ???
+  - output is indicator with best params in a ranked list, combi in a ranked list
+
+== reverse training ==
+* from ideal benchmark, find the signal point for each rule
+* training for average best signal points "range" for each indicator
