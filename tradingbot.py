@@ -24,7 +24,6 @@ import docopt
 import pyotp
 import robin_stocks as r
 
-
 def login(userId, passwd, robin_code):
     totp = pyotp.TOTP(robin_code).now()
     logi = r.login(userId, passwd,mfa_code=totp)
