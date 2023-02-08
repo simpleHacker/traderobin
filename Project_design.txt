@@ -2,16 +2,19 @@
 * login service: pass in account name and pass everytime when rerun, and generate tokin
 * indicator collection: with all indicators 
   indicator class is a wrapper to indicator calculation, register indicator, register alarting condition
-* strategy : indicator combination, ordering, and weighting to score formula
-* indicator condition model trainer(multi-threads): train to get best gain condition for indicator and best indicator combination.
+* strategy : designed trading method that could involve several stocks (pre-defined, like rule). strategy decide entry point according to model indicators according to its rule.
+* model: indicator combination, ordering, and weighting to score formula, indiate the entry or existing signals to a strategy. 
+* model/strategy trainer(multi-threads): train to get best gain condition for indicators and best indicator combination for a model in several factors.
   dynamically adjust model on streaming data
-* market monitor: keep watching market data and check for indicator condition match. if match, signal buy or sell suggestion.
+* market monitor: keep watching market data and check for strategy entry or exit condition match. if match, signal buy or sell suggestion.
+* strategy measurement: test strategy according to to bistorical data for some indices to indicate strategy good or not. (can be calculated every weekends) to decide should change strategy or not.
+* risk management on current portfolio on current strategy. (can set rule to control risk within a range, otherwise sell, rebalance, switch to other strategy)
 ** feeds hub: record  market data for interested stocks (only take 1 months data), others download from crypto data website.
 * execution desk: according predefined execution instruction, take in signal and execute or notify. record the execution performance along the buy and sell for re-calculate models. 
   For exception case, like spike market crash or spike up sharply, always alert.
 
 == architecture design ==
-* trading platform - API specific, any way to be vender nuetral
+* trading platform - API specific, any way to be vender nuetral000000000
   - may be wrap login, - generic and specific
   - wrap get hsitory quote - connect to feeds (periodically)
   - wrap trading action
@@ -43,6 +46,13 @@
   - save the best indicators ID for single models, save the combined indicator ID for combined models to file
   - training frequency - ???
   - output is indicator with best params in a ranked list, combi in a ranked list
+
+== model trainer design ==
+* search market feature set to get trading strategy, or according to classic trading strategy
+* backtersting strategys with a lot data
+* use testing measures to evaluate strategy on history data and filter strategy according to measurement predefined rules
+* evaluate investing portfolio according to risk managment as well to set weight on model strategies then select model according to current market trend by human.
+* save model to model db and keep updating according to latest data.
 
 == reverse training ==
 * from ideal benchmark, find the signal point for each rule
