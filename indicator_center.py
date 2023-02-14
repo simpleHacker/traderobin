@@ -5,9 +5,14 @@ Indicators:
 2. Bollinger Bands:
 3. MACD
 4. On Balance Volume (OBV)
+5. True Range (TR)
+6. Average True Range (ATR)
 
+* signal is optional. signal should be decided by trading strategy and model, not singly used
 provide multiple signals on each indicator with signal type and value
 Can have a global signal type table to check. so each indicator can report multiple signals
+
+could use the same interface with same arguments passed in. but each chart define self data packing logic for func call!
 """
 
 import numpy as np
@@ -147,13 +152,21 @@ class OBV(Indicator):
     def show(self, span):
 
 class MACD(Indicator):
-
     
-    def macd(self, feed=self.__feeds, short_period, long_period, signal_period):
+    def chart(self, feed, short_period, long_period, signal_period):
         """Momentum
         """
         return ti.macd(feed, short_period, long_period, signal_period)
 
+class TR(Indicator):
+    # N day feeds - (low, high, close) arrays
+    def chart(self, high, low, close):
+        return ti.tr(high, low, close)
+
+class ATR(Indicator):
+    # N days feeds (low, high, close) arrays
+    def chart(self, high, low, close, period):
+        return ti.atr(high, low, close, period)
 
 class Range(Indicator):
     # define all the constant
