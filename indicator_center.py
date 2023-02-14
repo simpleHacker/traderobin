@@ -12,6 +12,7 @@ Can have a global signal type table to check. so each indicator can report multi
 
 import numpy as np
 import tulipy as ti
+# https://pypi.org/project/newtulipy/
 
 class Indicator(object):
     """
@@ -19,12 +20,13 @@ class Indicator(object):
     with indicator calculation and signal checkers
     """
     # collection dict for all indicators, key as its name with param.
-    self.ind_dict = dict()
+    
     def __init__(self, feeds):
         """
         take in feeds object
         """
         self.__feeds = feeds
+        self.ind_dict = dict()
 
     def chart(self, period):
         pass
@@ -39,7 +41,9 @@ class RSI(Indicator):
     """
     Every 5 mins (default), it will be calculated again
     """
-    self.signal_points= dict() # training task will set signal_points
+    def __init__(self, feeds):
+        super().__init__(feeds)
+        self.signal_points= dict() # training task will set signal_points
 
     def chart(self, feed, span, period):
         """ Momentum
@@ -148,4 +152,39 @@ class MACD(Indicator):
     def macd(self, feed=self.__feeds, short_period, long_period, signal_period):
         """Momentum
         """
-        return ti.macd(feed, short_period, long_period, signal_period):
+        return ti.macd(feed, short_period, long_period, signal_period)
+
+
+class Range(Indicator):
+    # define all the constant
+    def __init__(self, feeds):
+        super().__init__(feeds)
+        TIME_WINDOW = 3 # days
+        UPPER = 1000 # can pick from recent historical, tag training set for best earning range
+        LOWER = 100
+        FREQUENCY = 3 # can pick from average earning sets
+        MAX_SPAN = 2 # months, can train from risk model
+    # return stable or instable, span should not longer than 
+    def chart(self, feeds, span):
+        starting_point = now - span # find calc start day
+        ending_point = now - 1 # end at yesterday
+        # range from 1 day to TIME_WINDOW for high and low
+        (low, point_low) = find_min(starting_point, ending_point, feeds)
+        (high, point_high) = find_max(starting_point, ending_point, feeds)
+        lows.append((low,point_low))
+        highs.append((high, point_high))
+        sort_lows(lows)
+        sort_highs(highs)
+        
+        # 3 lows has to distributed among 3 highs, need to calc distribution degree.
+        # if two lows close to each other without have high in between, merge the two low to one low.
+        # if two high close to each other without have low in between, also merge it.
+        # 3 highs > 3 lows, then return it is a stable range, otherwise instable
+        # train to find accuracy in term of n (3 low, high) 
+
+        # strategy for trading
+        # calc bband for the span on feeds
+        # buy when market price close to lowerband + variance, sell when market price close to upperband - variance.
+        # drop down the lowerband for a constant can be taken as leaving range pattern.
+        # 
+        # When use this model, better to also calculate trend and moving average, should not be down turn. 

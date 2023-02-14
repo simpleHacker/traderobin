@@ -72,7 +72,7 @@ Pyalgotrade provide feeds APIs
 * Momentum Indicators - RSI
 * Volume Indicators - On Balance Volume (OBV) 
 
-* bollinger bands:
+** bollinger bands:
  - The middle line can represent areas of support on pullbacks when the stock is riding the bands. You could even increase your position in the stock when the price pulls back to the middle line.
 Regarding identifying when the trend is losing steam, failure of the stock to continue to accelerate outside of the bands indicates a weakening in the strength of the stock.
 This would be a good time to think about scaling out of a position or getting out entirely.
@@ -83,4 +83,27 @@ This would be a good time to think about scaling out of a position or getting ou
  - Trade Inside the Bands: First, you need to find a stock that is stuck in a trading range. The greater the range, the better. In the above example, you just buy when a stock tests the low end of its range and the lower band. Conversely, you sell when the stock tests the high of the range and the upper band.
    The key to this strategy is a stock having a clearly defined trading range. This way you are not trading the bands blindly but are using the bands to gauge when a stock has gone too far.
   
-* OBV:
+** OBV:
+
+
+
+== market metrics ==
+* ranges model: 1. time window, 2. high and low. (range calculation always use time ordering)
+  - have stable range: starting back from now, using different time window (init as 3 days : can train to get average days, min days, max days), to search within these 
+    n days. if past every 3 days, M > high - low > C and frequncy > F, then it is a range pattern. need to adjust the time window to let high
+    later than low in a window. high lines and low lines  - the moving average should not be falling.
+  - have instable range: if in one time window, range shrink or enlarge upon the time, or moving average (high lines and low lines) falling, then instable.
+
+* needed indicators:
+1. calculate range: range in a timeframe can profit
+*# True Range: diff within a day
+*# Average True Range: volatility, average diff in a timeframe
+*# high low cross: high and low interwave each other
+2. trend: make sure flat or go up
+*# Directional Indicator: positive vs negtive
+*# Directional Index
+*# Average directional Index
+3. trading signal: (two confirm)
+*# bolling band: lower band and upper band
+*# RSI: (60-70) sell, (30-40) buy when trend is up. in buy zone, when price start to turn in 5 sampling after bottom, trigger buy.
+        in sell, when turn in 3 samples after peek.
