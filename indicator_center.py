@@ -33,35 +33,56 @@ class Indicator(object):
         self.__feeds = feeds
         self.ind_dict = dict()
 
-    def chart(self, period):
-        pass
-
-    def signal_checker(self):
-        pass
-
-    def show(self):
-        pass
-
-class RSI(Indicator):
-    """
-    Every 5 mins (default), it will be calculated again
-    """
-    def __init__(self, feeds):
-        super().__init__(feeds)
-        self.signal_points= dict() # training task will set signal_points
-
-    def chart(self, feed, span, period):
+    def RSI(self, span, period):
         """ Momentum
         take different span feeds to calculate period
         return one rsi array
         there is no two process update the same structure entry at the same time
+        Every 5 mins (default), it will be calculated again
         @param feed (np.array, new tick), will be updated in 5min gap just the last added tick (no add in, just update)
         """
-        self.ind_dict[(span, period)] = ti.rsi(feed, period)
+        self.ind_dict[(span, period)] = ti.rsi(self.__feeds, period)
 
-    def show(self, span, period):
-        
+    def BBands(self, span, period, stdev):
+        """Trend Following
+        default can use 20-period moving average, 2 multiply stdev.
+        calculate per day.
+        this indicator is used to assit other indicators, it does not give sell or buy signal directly.
+        it tell the volitility potential for the market.
+        return three bands: ['bbands_lower', 'bbands_middle', 'bbands_upper']
+        """
+        self.ind_dict[(span, period)] = ti.bbands(self.__feeds, period, stdev)
 
+    def OBV(self, span, volume):
+        self.ind_dict[span] = ti.obv(self.__feeds, volume)
+
+    def MACD(self, short_period, long_period, signal_period):
+        """Momentum
+        """
+        return ti.macd(self.__feeds, short_period, long_period, signal_period)
+
+    # N day feeds - (low, high, close) arrays
+    def TR(self):
+        high = get_high(self.__feeds)
+        low = get_low(self.__feeds)
+        close = get_close(self.__feeds)
+
+        return ti.tr(high, low, close)
+
+    # N days feeds (low, high, close) arrays
+    def ATR(self, period):
+        high = get_high(self.__feeds)
+        low = get_low(self.__feeds)
+        close = get_close(self.__feeds)
+        return ti.atr(high, low, close, period)
+
+    def signal_checker(self):
+        pass
+
+    def show(self, chart):
+        pass
+
+ ''' for RSI       
     def signal_checker(self, span, period):
         """
         use predefined selling and buying rules to filter current rsi value
@@ -80,22 +101,7 @@ class RSI(Indicator):
         elif rsi[-1] > sell_point:
             watch_sell(); # also combine
 
-class BBands(Indicator):
-    """
-    default can use 20-period moving average, 2 multiply stdev.
-    calculate per day.
-    this indicator is used to assit other indicators, it does not give sell or buy signal directly.
-    it tell the volitility potential for the market.
-    """
-    signal_points = dict() # training task will set signal_points
-
-    def chart(self, feed, span, period, stdev):
-        """Trend Following
-        return three bands: ['bbands_lower', 'bbands_middle', 'bbands_upper']
-        """
-        self.ind_dict[(span, period)] = ti.bbands(feed, period, stddev)
-        # calculate bandwidth
-
+    # BBANDS:
     def signal_checker(self, span, period):
         """
         if close to the most narrow width, signal for preparation
@@ -126,18 +132,6 @@ class BBands(Indicator):
         ## if feed[-1] >= upband[-2]: sell
         ## if feed[-1] <= lowband[-2]: buy
 
-    def show(self, span, period):
-
-class OBV(Indicator):
-
-    def chart(self, feeds, span, volumn):
-        """momentum
-        use to compbine with RSI and BBands to confirm trading decisions.
-        usually this is not used during day
-        return an array of obvs
-        """
-        self.ind_dict[span] = ti.obv(feeds, volume)
-
     def signal_checker(self, span):
         """
         signal when volumn climb or slip
@@ -149,24 +143,7 @@ class OBV(Indicator):
         elif obv[-1] < obv[-1]:
             signal(OBV_DOWN)
 
-    def show(self, span):
-
-class MACD(Indicator):
-    
-    def chart(self, feed, short_period, long_period, signal_period):
-        """Momentum
-        """
-        return ti.macd(feed, short_period, long_period, signal_period)
-
-class TR(Indicator):
-    # N day feeds - (low, high, close) arrays
-    def chart(self, high, low, close):
-        return ti.tr(high, low, close)
-
-class ATR(Indicator):
-    # N days feeds (low, high, close) arrays
-    def chart(self, high, low, close, period):
-        return ti.atr(high, low, close, period)
+'''
 
 class Range(Indicator):
     # define all the constant
