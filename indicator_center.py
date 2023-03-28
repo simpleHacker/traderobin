@@ -1,5 +1,5 @@
 """
-calulate each indicator from feeds
+* calulate each indicator from feeds
 Indicators:
 1. RSI, ({1y, 14p}, {1y, 5p}, {6m, 5p}, {1m, 6p}, {6m, 14p}, {1m, 14p})
 2. Bollinger Bands:
@@ -12,28 +12,93 @@ Indicators:
 provide multiple signals on each indicator with signal type and value
 Can have a global signal type table to check. so each indicator can report multiple signals
 
+* operate as an in memory storage for different combination of calculation:
+    - try find an efficient way to index combinations
+    - find a way to serialize the map to file and read it back
+
+* provide a chart drawing function
+
 could use the same interface with same arguments passed in. but each chart define self data packing logic for func call!
 """
 
+import datetime
 import numpy as np
+import sys
+import shelve as sh
 import tulipy as ti
 # https://pypi.org/project/newtulipy/
 
-class Indicator(object):
+from pathlib import Path
+from . import feeds_robin as fr
+
+class Indicators(object):
     """
     make it a abstract class and each indicator will implement it
     with indicator calculation and signal checkers
     """
     # collection dict for all indicators, key as its name with param.
     
-    def __init__(self, feeds):
+    def __init__(self, feeds, start, end):
         """
         take in feeds object
         """
-        self.__feeds = feeds
-        self.ind_dict = dict()
 
-    def RSI(self, span, period):
+        #TODO: define feeds structure!!
+        self.__feeds = feeds
+        self.__high = fr.get_high(self.__feeds)
+        self.__low = fr.get_low(self.__feeds)
+        self.__close = fr.get_close(self.__feeds)
+        self.id = start + "_" + end
+        # update store by day
+        self.__latest = datetime.date.now()
+        self.__lock = False
+        
+        DBFILE = "indicators.db"
+        shelfSavePath = Path(sys.argv[0]).parent / Path(DBFILE)
+        self.ind_dict = sh.open(fr'{shelfSavePath}')
+        #TODO: shell we delete all data in shelve at the beginning???
+
+    def __del__(self):
+        self.ind_dict.close()
+
+    # outside schedule manager to manage refresh everyday calculation
+    def __refresh(self, feeds, start, end):
+        self.__feeds = feeds
+        self.__high = fr.get_high(self.__feeds)
+        self.__low = fr.get_low(self.__feeds)
+        self.__close = fr.get_close(self.__feeds)
+        self.id = start + "_" + end
+
+        now = datetime.date.now()
+        # delete old data and recalculate with new data, lock it when recalculate
+        if now != self.__latest:
+            self.__lock = True
+            for k in self.ind_dict.keys():
+                methd, params = self.dekey(k)
+                del self.ind_dict[k]
+                method = getattr(self, methd.upper())
+                method(*params)
+
+    def reload(self, feeds, high, low, close):
+        #TODO: has to have recalculation as well
+        self.__feeds = feeds
+        self.__high = high
+        self.__low = low
+        self.__close = close
+    
+    @staticmethod
+    def key(l):
+        re = '_'.join(str(e) for e in l)
+        return re
+    
+    @staticmethod
+    def dekey(k):
+        re = k.split('_')
+        params = [int(e) for e in re[1:]] if len(re) > 1 else []
+        return re[0], params
+
+
+    def RSI(self, period):
         """ Momentum
         take different span feeds to calculate period
         return one rsi array
@@ -41,9 +106,9 @@ class Indicator(object):
         Every 5 mins (default), it will be calculated again
         @param feed (np.array, new tick), will be updated in 5min gap just the last added tick (no add in, just update)
         """
-        self.ind_dict[(span, period)] = ti.rsi(self.__feeds, period)
+        self.ind_dict[self.key(["rsi",period])] = ti.rsi(self.__feeds, period)
 
-    def BBands(self, span, period, stdev):
+    def BBands(self, period, stdev):
         """Trend Following
         default can use 20-period moving average, 2 multiply stdev.
         calculate per day.
@@ -51,36 +116,54 @@ class Indicator(object):
         it tell the volitility potential for the market.
         return three bands: ['bbands_lower', 'bbands_middle', 'bbands_upper']
         """
-        self.ind_dict[(span, period)] = ti.bbands(self.__feeds, period, stdev)
+        self.ind_dict[self.key(["bbands",period,stdev])] = ti.bbands(self.__feeds, period, stdev)
 
-    def OBV(self, span, volume):
-        self.ind_dict[span] = ti.obv(self.__feeds, volume)
+    def OBV(self, volume):
+        self.ind_dict[self.key(["obv",volume])] = ti.obv(self.__feeds, volume)
 
     def MACD(self, short_period, long_period, signal_period):
         """Momentum
         """
-        return ti.macd(self.__feeds, short_period, long_period, signal_period)
+        self.ind_dict[self.key(["macd", short_period, long_period, signal_period])] = ti.macd(self.__feeds, short_period, long_period, signal_period)
 
     # N day feeds - (low, high, close) arrays
     def TR(self):
-        high = get_high(self.__feeds)
-        low = get_low(self.__feeds)
-        close = get_close(self.__feeds)
-
-        return ti.tr(high, low, close)
+        self.ind_dict["tr"] = ti.tr(self.__high, self.__low, self.__close)
 
     # N days feeds (low, high, close) arrays
     def ATR(self, period):
-        high = get_high(self.__feeds)
-        low = get_low(self.__feeds)
-        close = get_close(self.__feeds)
-        return ti.atr(high, low, close, period)
+        # output a float
+        self.ind_dict[self.key(["atr",period])] = ti.atr(self.__high, self.__low, self.__close, period)
+
+    # directional indicator - positive, negtive
+    def DI(self, period):
+        # output: plus_di and minus_di array
+        self.ind_dict[self.key(["plus_di", period])], self.ind_dict[("minus_di", period)] = ti.di(self.__high, self.__low, self.__close, period)
+
+    def ADX(self, period):
+        # output dx as float
+        self.ind_dict[self.key(["adx", period])] = ti.adx(self.__high, self.__low, self.__close, period)
+
+    def load(self, inds, consts):
+        # @param key, [(indicator_name, param_names array)...]
+        # @param consts, {"param_name":param_value...}
+        collect = {}
+        for ind, par in inds:
+            params = [consts[p] for p in par]
+            key = self.key(ind, *params)
+            if key in self.ind_dict:
+                collect[ind] = self.ind_dict[key]
+            else:
+                print("Error: indicator=%s with key=%s is not exist" % (ind, key))
 
     def signal_checker(self):
         pass
 
     def show(self, chart):
         pass
+
+    
+
 
  ''' for RSI       
     def signal_checker(self, span, period):
@@ -178,3 +261,5 @@ class Range(Indicator):
         # drop down the lowerband for a constant can be taken as leaving range pattern.
         # 
         # When use this model, better to also calculate trend and moving average, should not be down turn. 
+        ## to decide on a upper trend: 1, plus_di >= minus_di; 2, adx >= 20 (can be trained according recent data)
+        ## but use it need to be cautious, so train with historical data to find a proper adx for the strength.

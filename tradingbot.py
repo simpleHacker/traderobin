@@ -10,30 +10,34 @@ Description:
  6) trade executor
 
 Usage:
-    python tradingbot.py -u <userId> -p <passwd> -c <robin_code> [-e]
+    python tradingbot.py -u <userId> -p <passwd> -i <uinfo> [-e]
 
 Options:
     -u <userId>     user name
     -p <passwd>     password
-    -c <robin_code>   robin code to generate mfa code
+    -i <uinfo>      uinfo
     -e              execution mode
 
 """
 
 import docopt
 import pyotp
+from . import login_robin
 import robin_stocks as r
 
-def login(userId, passwd, robin_code):
-    totp = pyotp.TOTP(robin_code).now()
-    logi = r.login(userId, passwd,mfa_code=totp)
+def login(uinfo, options):
+    with open(uinfo, "r") as f:
+        lines = [line for line in f]
+        logi = r.login(lines[0], lines[1], options, lines[2])
     return logi
 
 def main(argv):
     userId = None
     passwd = None
-    robin_code = None
+    uinfo = None
     isExecution = False
+    options=""
+
 
     # parse in all parameters
     if argv["-u"]:
@@ -46,17 +50,18 @@ def main(argv):
     else:
         print("Error: No password")
         return
-    if argv["-c"]:
-        robin_code = argv["-c"]
+    if argv["-i"]:
+        uinfo = argv["-i"]
+        options= "2FA"
     else:
-        print("Error: No robin code")
+        print("Error: No info")
         return
     if argv["-e"]:
         isExecution = True
     
     # workflow
     ## login
-    lginfo = login(userId, passwd, robin_code)
+    lginfo = login(uinfo, options)
     print(lginfo)
 
     ##TODO take in hist and real time market data into feeds

@@ -4,10 +4,12 @@ concrete class provide method to login in robin
 
 from . import login
 import pyotp
-import robin_stocks as r
+import robin_stocks.robinhood as r
 
-class RobinLogin(Login):
-    def login(self, account, passwd, options=""):
-        # totp = pyotp.TOTP("").now()
-        lg = r.login(account, passwd)
-        #lg = r.login(account, passwd, mfa_code=totp)       
+class RobinLogin(login.Login):
+    def login(self, account, passwd, options="", token=""):
+        if options == "2FA" and token:
+            totp = pyotp.TOTP(token).now()
+            lg = r.login(account, passwd, mfa_code=totp)
+        else:
+            lg = r.login(account, passwd)    
