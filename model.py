@@ -22,9 +22,7 @@ class model(object):
         self.__indicator_tags = indicator_tags
         self.__constants_range = constants_range
         self.__dataset = dataset
-        #TODO: delete start and end
-        self.__center = Indicators(dataset, 1, 2)
-
+    
     def loadStrategy(self, strategy):
         self.__strategy = strategy
 
@@ -53,13 +51,13 @@ class model(object):
         # @param constants, {'param_name':param_value...}
         # @param dataset, all the data collections
         # TODO: figure out start and end
-        self.__ind_instance = Indicators(dataset['feeds'], 1, 2)
-        self.__ind_instance.reload(dataset['feeds'], dataset['high'], dataset['low'], dataset['close'])
+        self.__center = Indicators(dataset['feeds'], 1, 2)
+        self.__center.reload(dataset['feeds'], dataset['high'], dataset['low'], dataset['close'])
         for ind, params in indicators:
             vec = []
             for p in params:
-                vec.append(constants[p]) 
-                func = getattr(self.__ind_instance, ind)
+                vec.append(constants[p])
+                func = getattr(self.__center, ind)
                 func(**vec)
 
     def train(self, dataset, testset):
