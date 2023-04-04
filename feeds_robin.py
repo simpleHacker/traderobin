@@ -50,8 +50,6 @@ class RobinFeeds(feeds.Feeds):
     def get_lows(prices):
         return np.array([float(p["low_price"]) for p in prices])
 
-    def 
-
 
     def get_crypto_current(self, symbol):
         """

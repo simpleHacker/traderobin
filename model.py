@@ -16,15 +16,15 @@ from indicator_center import Indicators
 
 class model(object):
 
-    def __init__(self, strategy, indicator_tags, constants_range, dataset):
+    def __init__(self, strategy, indicator_tags, constants_range):
+        self.__security = security
         self.__strategy = strategy
         # indicator with param names in order
         self.__indicator_tags = indicator_tags
         self.__constants_range = constants_range
-        self.__dataset = dataset
     
-    def loadStrategy(self, strategy):
-        self.__strategy = strategy
+    #def loadStrategy(self, strategy):
+    #    self.__strategy = strategy
 
     def permutator(self):
         k, v = self.__constants_range.popitem()
@@ -51,8 +51,7 @@ class model(object):
         # @param constants, {'param_name':param_value...}
         # @param dataset, all the data collections
         # TODO: figure out start and end
-        self.__center = Indicators(dataset['feeds'], 1, 2)
-        self.__center.reload(dataset['feeds'], dataset['high'], dataset['low'], dataset['close'])
+        
         for ind, params in indicators:
             vec = []
             for p in params:
@@ -60,22 +59,42 @@ class model(object):
                 func = getattr(self.__center, ind)
                 func(**vec)
 
+    # outside schedule manager to manage retrain everyday to recalculation
     def train(self, dataset, testset):
-        #TODO: this strategy should belongs to model class
         # train to get optimal model that perform best, risk least
         # keep model, performance and risk data
+        #TODO: check duplicate Indicators instance
+        self.__center = Indicators(dataset['feeds'], 1, 2)
+        #TODO: result should be indicator_tags and consts for rule as ID
+        self.__results = {}
         constants = self.permutator() # {'N': (low, high, step), 'period': (5,14,1)...}
         # can parallel
         for const in constants:
-            self.calc_indicators(self.__indicator_tags, const, dataset)
+            self.calc_indicators(self.__indicator_tags, const)
             self.__strategy.loadIndicators(self.__indicator_tags, const, self.__center)
             for market in testset:
-                self.__strategy.execute(market)
+                re = self.__strategy.execute(market)
+                self.result[re] = (self.__indicator_tags, const)
             diff = self.__strategy.report()
-            store(inds, const, diff)
-        const = findBest(store_map)
-        paper_trade(strategy, constant)
+        pairs = self.findBest(3)
+        paper_trade(pairs, feeds)
         # then use const to calc inds according to latest dataset, then rest of const as input to rule
+
+    def findBest(self, num):
+        # find best num of return from result
+        relist = list(self.__results.keys())
+        relist.sort()
+        bests = [self.__results[re] for re in relist]
+        return bests
+
+    def paper_trade(self, pairs, feeds):
+        #for every 5 mins
+        market = feeds.get_crypto_current(self.__security)
+        self.__strategy.loadIndicators(pairs[0], pairs[1], self.__center)
+        re1 = self.__strategy.execute_buy(market)
+        re2 = self.__strategy.execute_sell(market)
+
+
 
 
     

@@ -35,6 +35,7 @@ class Indicators(object):
     """
     make it a abstract class and each indicator will implement it
     with indicator calculation and signal checkers
+    start and end has to be unique, can not include each other!
     """
     # collection dict for all indicators, key as its name with param.
     
@@ -42,7 +43,6 @@ class Indicators(object):
         """
         take in feeds object
         """
-
         #TODO: define feeds structure!!
         self.__feeds = feeds
         self.__high = fr.get_high(self.__feeds)
@@ -52,39 +52,39 @@ class Indicators(object):
         # update store by day
         self.__latest = datetime.date.now()
         self.__lock = False
+        self.setDict(start, end)
         
-        DBFILE = "indicators.db"
+        #TODO: shell we delete all data in shelve at the beginning???
+
+    def setDict(self, start, end):
+        DBFILE = "indicators.db" + "." + start + "." + end
         shelfSavePath = Path(sys.argv[0]).parent / Path(DBFILE)
         self.ind_dict = sh.open(fr'{shelfSavePath}')
-        #TODO: shell we delete all data in shelve at the beginning???
+
 
     def __del__(self):
         self.ind_dict.close()
 
-    # outside schedule manager to manage refresh everyday calculation
     def __refresh(self, feeds, start, end):
+        # close previos dict
+        keys = self.ind_dict.keys()
+        self.ind_dict.close()
         self.__feeds = feeds
         self.__high = fr.get_high(self.__feeds)
         self.__low = fr.get_low(self.__feeds)
         self.__close = fr.get_close(self.__feeds)
         self.id = start + "_" + end
+        self.setDict(start, end) # this will create a new shelf dict
 
         now = datetime.date.now()
         # delete old data and recalculate with new data, lock it when recalculate
         if now != self.__latest:
             self.__lock = True
-            for k in self.ind_dict.keys():
+            for k in keys:
                 methd, params = self.dekey(k)
-                del self.ind_dict[k]
                 method = getattr(self, methd.upper())
                 method(*params)
 
-    def reload(self, feeds, high, low, close):
-        #TODO: has to have recalculation as well
-        self.__feeds = feeds
-        self.__high = high
-        self.__low = low
-        self.__close = close
     
     @staticmethod
     def key(l):
@@ -144,7 +144,7 @@ class Indicators(object):
         # output dx as float
         self.ind_dict[self.key(["adx", period])] = ti.adx(self.__high, self.__low, self.__close, period)
 
-    def load(self, inds, consts):
+    def collectIndicators(self, inds, consts):
         # @param key, [(indicator_name, param_names array)...]
         # @param consts, {"param_name":param_value...}
         collect = {}
@@ -155,6 +155,7 @@ class Indicators(object):
                 collect[ind] = self.ind_dict[key]
             else:
                 print("Error: indicator=%s with key=%s is not exist" % (ind, key))
+            return collect
 
     def signal_checker(self):
         pass

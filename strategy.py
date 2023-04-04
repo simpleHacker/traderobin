@@ -27,20 +27,10 @@ class Strategy(object):
         self.__const = const
         self.__rule = rule
         self.__ind_center = Indicators()
-
-        
-    def updateInd(self, indicators):
-        # receive update of all indicator calculations
-        # get call every time when some params has new value in
-        self.__indicators = indicators
-
-    def loadParameters(self, indicator, const):
-        self.__indicators = indicator
-        self.__const = const
-
+    
     def loadIndicators(self, inds, consts, center):
         # this indicators are calculated one as np array
-        self.__indicators = center.load(inds, consts)
+        self.__indicators = center.collectIndicators(inds, consts)
 
     def execute(self, market):
         # run the strategy - keep running
@@ -50,6 +40,17 @@ class Strategy(object):
         result = eval(self.__rule, {}, params)
         return result
         
+
+
+
+    def updateInd(self, indicators):
+        # receive update of all indicator calculations
+        # get call every time when some params has new value in
+        self.__indicators = indicators
+
+    def loadParameters(self, indicator, const):
+        self.__indicators = indicator
+        self.__const = const
 
     def loadRule(self, rule):
         # load the rule expression from file 
