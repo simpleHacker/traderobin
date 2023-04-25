@@ -16,7 +16,7 @@ from indicator_center import Indicators
 
 class model(object):
 
-    def __init__(self, strategy, indicator_tags, constants_range):
+    def __init__(self, security, strategy, indicator_tags, constants_range):
         self.__security = security
         self.__strategy = strategy
         # indicator with param names in order
@@ -68,17 +68,33 @@ class model(object):
         #TODO: result should be indicator_tags and consts for rule as ID
         self.__results = {}
         constants = self.permutator() # {'N': (low, high, step), 'period': (5,14,1)...}
+        order = None # init order, with all trade detail
         # can parallel
         for const in constants:
             self.calc_indicators(self.__indicator_tags, const)
             self.__strategy.loadIndicators(self.__indicator_tags, const, self.__center)
+            # buy first
             for market in testset:
-                re = self.__strategy.execute(market)
-                self.result[re] = (self.__indicator_tags, const)
-            diff = self.__strategy.report()
+                if !order and self.__strategy.execute_buy(market):
+                    priceA = testset["mark_price"]
+                    #TODO: create order
+                else order and self.__strategy.execute_sell(market):
+                    #TODO: then sell order
+                    priceB = testset["market_price"]
+                if priceA > 0 and priceB > 0:
+                    diff = priceB - priceA
+                    self.__results[diff] = (self.__indicator_tags, const)
         pairs = self.findBest(3)
         paper_trade(pairs, feeds)
         # then use const to calc inds according to latest dataset, then rest of const as input to rule
+
+    def electModel(self):
+        key_list = list(self.__results.keys())
+        best = max(key_list)
+        self.__strategy.loadIndicators(best[0], best[1], self.__center)
+        return self.__strategy
+
+
 
     def findBest(self, num):
         # find best num of return from result

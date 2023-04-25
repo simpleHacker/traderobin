@@ -39,16 +39,17 @@ class Indicators(object):
     """
     # collection dict for all indicators, key as its name with param.
     
-    def __init__(self, feeds, start, end):
+    def __init__(self, security, feeds, start, end):
         """
         take in feeds object
         """
         #TODO: define feeds structure!!
+        self.__security = security
         self.__feeds = feeds
         self.__high = fr.get_high(self.__feeds)
         self.__low = fr.get_low(self.__feeds)
         self.__close = fr.get_close(self.__feeds)
-        self.id = start + "_" + end
+        self.__id = security + ":" + start + "_" + end
         # update store by day
         self.__latest = datetime.date.now()
         self.__lock = False
@@ -56,8 +57,8 @@ class Indicators(object):
         
         #TODO: shell we delete all data in shelve at the beginning???
 
-    def setDict(self, start, end):
-        DBFILE = "indicators.db" + "." + start + "." + end
+    def setDict(self, security, start, end):
+        DBFILE = "indicators.db" + "." + security + "." + start + "." + end
         shelfSavePath = Path(sys.argv[0]).parent / Path(DBFILE)
         self.ind_dict = sh.open(fr'{shelfSavePath}')
 
@@ -65,7 +66,7 @@ class Indicators(object):
     def __del__(self):
         self.ind_dict.close()
 
-    def __refresh(self, feeds, start, end):
+    def __refresh(self, security, feeds, start, end):
         # close previos dict
         keys = self.ind_dict.keys()
         self.ind_dict.close()
@@ -73,8 +74,8 @@ class Indicators(object):
         self.__high = fr.get_high(self.__feeds)
         self.__low = fr.get_low(self.__feeds)
         self.__close = fr.get_close(self.__feeds)
-        self.id = start + "_" + end
-        self.setDict(start, end) # this will create a new shelf dict
+        self.__id = security + ":" + start + "_" + end
+        self.setDict(security, start, end) # this will create a new shelf dict
 
         now = datetime.date.now()
         # delete old data and recalculate with new data, lock it when recalculate
@@ -84,7 +85,6 @@ class Indicators(object):
                 methd, params = self.dekey(k)
                 method = getattr(self, methd.upper())
                 method(*params)
-
     
     @staticmethod
     def key(l):
@@ -96,7 +96,6 @@ class Indicators(object):
         re = k.split('_')
         params = [int(e) for e in re[1:]] if len(re) > 1 else []
         return re[0], params
-
 
     def RSI(self, period):
         """ Momentum
